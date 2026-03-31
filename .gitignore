@@ -22,6 +22,9 @@ watchers/.auth/
 watchers/.env
 obsidian-vault/
 
+# WhatsApp session files
+watchers/whatsapp_watcher/.wwebjs_auth/
+
 # Logs
 *.log
 watchers/logs/*.log
