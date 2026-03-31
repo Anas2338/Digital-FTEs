@@ -1,0 +1,16 @@
+{
+  "name": "digital-fte-whatsapp-bridge",
+  "version": "0.1.0",
+  "description": "Node.js bridge for WhatsApp Web integration",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

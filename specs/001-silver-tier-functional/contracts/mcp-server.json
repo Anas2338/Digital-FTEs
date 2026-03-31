@@ -1,0 +1,299 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Digital FTE MCP Server",
+    "version": "1.0.0",
+    "description": "Model Context Protocol server for external actions (email, LinkedIn, WhatsApp)"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local MCP server"
+    }
+  ],
+  "paths": {
+    "/tools/list": {
+      "get": {
+        "summary": "List available tools",
+        "operationId": "listTools",
+        "responses": {
+          "200": {
+            "description": "List of available tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tools": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Tool"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/invoke": {
+      "post": {
+        "summary": "Invoke a tool",
+        "operationId": "invokeTool",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolInvocation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tool execution result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["healthy"]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Tool": {
+        "type": "object",
+        "required": ["name", "description", "parameters"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": ["send-email", "linkedin-post", "whatsapp-send"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object"
+          }
+        }
+      },
+      "ToolInvocation": {
+        "type": "object",
+        "required": ["tool", "parameters"],
+        "properties": {
+          "tool": {
+            "type": "string",
+            "enum": ["send-email", "linkedin-post", "whatsapp-send"]
+          },
+          "parameters": {
+            "type": "object"
+          }
+        }
+      },
+      "SendEmailParameters": {
+        "type": "object",
+        "required": ["recipient", "subject", "body"],
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address of recipient"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Email subject line"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 10000,
+            "description": "Email body (plain text or HTML)"
+          },
+          "cc": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "CC recipients (optional)"
+          },
+          "bcc": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "BCC recipients (optional)"
+          }
+        }
+      },
+      "LinkedInPostParameters": {
+        "type": "object",
+        "required": ["content"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 3000,
+            "description": "Post content (max 3000 chars per LinkedIn limit)"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["public", "connections"],
+            "default": "public",
+            "description": "Post visibility"
+          }
+        }
+      },
+      "WhatsAppSendParameters": {
+        "type": "object",
+        "required": ["recipient_phone", "message"],
+        "properties": {
+          "recipient_phone": {
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{1,14}$",
+            "description": "Recipient phone number in E.164 format (e.g., +14155552671)"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "Message text (max 4096 chars per WhatsApp limit)"
+          }
+        }
+      },
+      "ToolResult": {
+        "type": "object",
+        "required": ["success", "action_id"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether tool execution succeeded"
+          },
+          "action_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique action identifier for tracking"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending_approval", "executed", "failed"],
+            "description": "Action status (pending_approval for Level 2+ actions)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable result message"
+          },
+          "external_id": {
+            "type": "string",
+            "description": "External system identifier (e.g., Gmail message ID, LinkedIn post ID)"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if success=false"
+          },
+          "retry_after": {
+            "type": "integer",
+            "description": "Seconds to wait before retry (for rate limit errors)"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": ["validation_error", "execution_error", "authentication_error"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error context"
+          }
+        }
+      },
+      "RateLimitError": {
+        "type": "object",
+        "required": ["error", "message", "retry_after", "limit", "remaining"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": ["rate_limit_exceeded"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "retry_after": {
+            "type": "integer",
+            "description": "Seconds until rate limit resets"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rate limit threshold (e.g., 100 for Gmail)"
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "Remaining quota (should be 0 when this error occurs)"
+          }
+        }
+      }
+    }
+  }
+}

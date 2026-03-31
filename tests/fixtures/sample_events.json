@@ -1,0 +1,122 @@
+{
+  "gmail_events": [
+    {
+      "event_id": "550e8400-e29b-41d4-a716-446655440000",
+      "source_channel": "gmail",
+      "event_type": "email",
+      "content": {
+        "subject": "Q1 Revenue Report",
+        "sender": "cfo@company.com",
+        "body": "Please review the attached Q1 revenue report. Key highlights: Revenue up 25% YoY, expenses down 10%, net profit margin improved to 18%.",
+        "timestamp": "2026-03-30T14:30:00Z",
+        "message_id": "18e5e9f5a1234567",
+        "labels": ["ToVault", "INBOX"]
+      },
+      "timestamp": "2026-03-30T14:30:15Z"
+    },
+    {
+      "event_id": "550e8400-e29b-41d4-a716-446655440001",
+      "source_channel": "gmail",
+      "event_type": "email",
+      "content": {
+        "subject": "Meeting Request: Strategy Review",
+        "sender": "manager@company.com",
+        "body": "Can we schedule a meeting tomorrow at 10am to review our Q2 strategy? I'd like to discuss market expansion plans.",
+        "timestamp": "2026-03-30T15:00:00Z",
+        "message_id": "18e5e9f5a1234568",
+        "labels": ["ToVault", "INBOX"]
+      },
+      "timestamp": "2026-03-30T15:00:10Z"
+    }
+  ],
+  "whatsapp_events": [
+    {
+      "event_id": "660e8400-e29b-41d4-a716-446655440001",
+      "source_channel": "whatsapp",
+      "event_type": "message",
+      "content": {
+        "sender_name": "John Doe",
+        "sender_phone": "+14155552671",
+        "message_text": "Can we schedule a call tomorrow? I have some questions about the project timeline.",
+        "timestamp": "2026-03-30T15:45:00Z",
+        "message_id": "3EB0C767D26A1234",
+        "is_group": false
+      },
+      "timestamp": "2026-03-30T15:45:05Z"
+    },
+    {
+      "event_id": "660e8400-e29b-41d4-a716-446655440002",
+      "source_channel": "whatsapp",
+      "event_type": "message",
+      "content": {
+        "sender_name": "Jane Smith",
+        "sender_phone": "+14155552672",
+        "message_text": "Thanks for the update! The new features look great.",
+        "timestamp": "2026-03-30T16:00:00Z",
+        "message_id": "3EB0C767D26A5678",
+        "is_group": false
+      },
+      "timestamp": "2026-03-30T16:00:05Z"
+    },
+    {
+      "event_id": "660e8400-e29b-41d4-a716-446655440003",
+      "source_channel": "whatsapp",
+      "event_type": "message",
+      "content": {
+        "sender_name": "Alice Johnson",
+        "sender_phone": "+14155552673",
+        "message_text": "Meeting reminder: Team standup at 9am tomorrow",
+        "timestamp": "2026-03-30T16:30:00Z",
+        "message_id": "3EB0C767D26A9012",
+        "is_group": true,
+        "group_name": "Project Team"
+      },
+      "timestamp": "2026-03-30T16:30:05Z"
+    }
+  ],
+  "linkedin_events": [
+    {
+      "event_id": "770e8400-e29b-41d4-a716-446655440002",
+      "source_channel": "linkedin",
+      "event_type": "message",
+      "content": {
+        "sender_profile_url": "https://linkedin.com/in/janedoe",
+        "sender_name": "Jane Doe",
+        "notification_type": "message",
+        "content": "I saw your post about AI automation. Very insightful! Would love to discuss potential collaboration opportunities.",
+        "timestamp": "2026-03-30T16:20:00Z",
+        "notification_id": "urn:li:message:12345"
+      },
+      "timestamp": "2026-03-30T16:20:10Z"
+    },
+    {
+      "event_id": "770e8400-e29b-41d4-a716-446655440003",
+      "source_channel": "linkedin",
+      "event_type": "connection_request",
+      "content": {
+        "sender_profile_url": "https://linkedin.com/in/bobsmith",
+        "sender_name": "Bob Smith",
+        "notification_type": "connection_request",
+        "content": "I'd like to connect with you. We share similar interests in AI and automation.",
+        "timestamp": "2026-03-30T17:00:00Z",
+        "notification_id": "urn:li:connection:67890"
+      },
+      "timestamp": "2026-03-30T17:00:10Z"
+    },
+    {
+      "event_id": "770e8400-e29b-41d4-a716-446655440004",
+      "source_channel": "linkedin",
+      "event_type": "post_mention",
+      "content": {
+        "sender_profile_url": "https://linkedin.com/in/carolwhite",
+        "sender_name": "Carol White",
+        "notification_type": "post_mention",
+        "content": "Great insights on digital transformation! @yourname",
+        "timestamp": "2026-03-30T17:30:00Z",
+        "notification_id": "urn:li:comment:11223",
+        "post_url": "https://linkedin.com/posts/carolwhite_digital-transformation-12345"
+      },
+      "timestamp": "2026-03-30T17:30:10Z"
+    }
+  ]
+}

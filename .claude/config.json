@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "digital-fte": {
+      "command": "uvicorn",
+      "args": [
+        "mcp_servers.digital_fte_server.server:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "description": "Digital FTE MCP Server for external actions (email, LinkedIn, WhatsApp)",
+      "tools": [
+        "send-email",
+        "linkedin-post",
+        "whatsapp-send"
+      ]
+    }
+  },
+  "settings": {
+    "vault_path": "obsidian-vault",
+    "database_path": "watchers/shared/digital_fte.db",
+    "log_level": "INFO"
+  }
+}

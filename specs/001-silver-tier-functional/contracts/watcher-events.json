@@ -1,0 +1,239 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Watcher Event Schemas",
+  "description": "Event schemas emitted by watchers when new communications are detected",
+  "definitions": {
+    "GmailEvent": {
+      "type": "object",
+      "required": ["event_id", "source_channel", "event_type", "content", "timestamp"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier"
+        },
+        "source_channel": {
+          "type": "string",
+          "const": "gmail"
+        },
+        "event_type": {
+          "type": "string",
+          "const": "email"
+        },
+        "content": {
+          "type": "object",
+          "required": ["subject", "sender", "body", "timestamp", "message_id"],
+          "properties": {
+            "subject": {
+              "type": "string",
+              "description": "Email subject line"
+            },
+            "sender": {
+              "type": "string",
+              "format": "email",
+              "description": "Sender email address"
+            },
+            "body": {
+              "type": "string",
+              "description": "Email body (plain text, HTML stripped)"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Email received timestamp (ISO 8601)"
+            },
+            "message_id": {
+              "type": "string",
+              "description": "Gmail message ID"
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Gmail labels (e.g., ['ToVault', 'INBOX'])"
+            }
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Event detection timestamp (ISO 8601)"
+        }
+      }
+    },
+    "WhatsAppEvent": {
+      "type": "object",
+      "required": ["event_id", "source_channel", "event_type", "content", "timestamp"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_channel": {
+          "type": "string",
+          "const": "whatsapp"
+        },
+        "event_type": {
+          "type": "string",
+          "const": "message"
+        },
+        "content": {
+          "type": "object",
+          "required": ["sender_name", "sender_phone", "message_text", "timestamp"],
+          "properties": {
+            "sender_name": {
+              "type": "string",
+              "description": "Contact name from WhatsApp"
+            },
+            "sender_phone": {
+              "type": "string",
+              "pattern": "^\\+[1-9]\\d{1,14}$",
+              "description": "Sender phone number (E.164 format)"
+            },
+            "message_text": {
+              "type": "string",
+              "description": "Message content (text only, no media)"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Message received timestamp (ISO 8601)"
+            },
+            "message_id": {
+              "type": "string",
+              "description": "WhatsApp message ID"
+            },
+            "is_group": {
+              "type": "boolean",
+              "description": "Whether message is from group chat"
+            },
+            "group_name": {
+              "type": "string",
+              "description": "Group name if is_group=true"
+            }
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "LinkedInEvent": {
+      "type": "object",
+      "required": ["event_id", "source_channel", "event_type", "content", "timestamp"],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_channel": {
+          "type": "string",
+          "const": "linkedin"
+        },
+        "event_type": {
+          "type": "string",
+          "enum": ["message", "connection_request", "post_mention"]
+        },
+        "content": {
+          "type": "object",
+          "required": ["sender_profile_url", "notification_type", "content", "timestamp"],
+          "properties": {
+            "sender_profile_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "LinkedIn profile URL of sender"
+            },
+            "sender_name": {
+              "type": "string",
+              "description": "Sender's display name"
+            },
+            "notification_type": {
+              "type": "string",
+              "enum": ["message", "connection_request", "post_mention", "comment", "like"],
+              "description": "Type of LinkedIn notification"
+            },
+            "content": {
+              "type": "string",
+              "description": "Notification content (message text, connection note, etc.)"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Notification timestamp (ISO 8601)"
+            },
+            "notification_id": {
+              "type": "string",
+              "description": "LinkedIn notification ID"
+            },
+            "post_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "URL of related post (for mentions/comments)"
+            }
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/GmailEvent"
+    },
+    {
+      "$ref": "#/definitions/WhatsAppEvent"
+    },
+    {
+      "$ref": "#/definitions/LinkedInEvent"
+    }
+  ],
+  "examples": [
+    {
+      "event_id": "550e8400-e29b-41d4-a716-446655440000",
+      "source_channel": "gmail",
+      "event_type": "email",
+      "content": {
+        "subject": "Q1 Revenue Report",
+        "sender": "cfo@company.com",
+        "body": "Please review the attached Q1 revenue report...",
+        "timestamp": "2026-03-30T14:30:00Z",
+        "message_id": "18e5e9f5a1234567",
+        "labels": ["ToVault", "INBOX"]
+      },
+      "timestamp": "2026-03-30T14:30:15Z"
+    },
+    {
+      "event_id": "660e8400-e29b-41d4-a716-446655440001",
+      "source_channel": "whatsapp",
+      "event_type": "message",
+      "content": {
+        "sender_name": "John Doe",
+        "sender_phone": "+14155552671",
+        "message_text": "Can we schedule a call tomorrow?",
+        "timestamp": "2026-03-30T15:45:00Z",
+        "message_id": "3EB0C767D26A1234",
+        "is_group": false
+      },
+      "timestamp": "2026-03-30T15:45:05Z"
+    },
+    {
+      "event_id": "770e8400-e29b-41d4-a716-446655440002",
+      "source_channel": "linkedin",
+      "event_type": "message",
+      "content": {
+        "sender_profile_url": "https://linkedin.com/in/janedoe",
+        "sender_name": "Jane Doe",
+        "notification_type": "message",
+        "content": "I saw your post about AI automation...",
+        "timestamp": "2026-03-30T16:20:00Z",
+        "notification_id": "urn:li:message:12345"
+      },
+      "timestamp": "2026-03-30T16:20:10Z"
+    }
+  ]
+}
