@@ -26,6 +26,12 @@ obsidian-vault/
 *.log
 watchers/logs/*.log
 
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # IDE
 .vscode/
 .idea/
