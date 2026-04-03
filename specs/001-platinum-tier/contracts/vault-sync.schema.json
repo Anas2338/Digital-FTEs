@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Vault Sync Event Schema",
+  "description": "Schema for vault synchronization events between cloud and local agents",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this sync event"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["file_created", "file_modified", "file_deleted", "conflict_detected"],
+      "description": "Type of synchronization event"
+    },
+    "file_path": {
+      "type": "string",
+      "description": "Relative path to the file within the vault"
+    },
+    "agent_id": {
+      "type": "string",
+      "enum": ["cloud", "local"],
+      "description": "Which agent triggered this event"
+    },
+    "logical_timestamp": {
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "enum": ["cloud", "local"]
+        },
+        "counter": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wall_clock_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Human-readable timestamp (informational only)"
+        }
+      },
+      "required": ["agent_id", "counter"],
+      "additionalProperties": false
+    },
+    "conflict_resolution": {
+      "type": "string",
+      "enum": ["local_wins", "cloud_wins", "manual_required"],
+      "description": "How conflict should be resolved (only for conflict_detected events)"
+    },
+    "git_commit_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$",
+      "description": "Git commit hash (for git-based sync)"
+    },
+    "sync_method": {
+      "type": "string",
+      "enum": ["git", "syncthing"],
+      "description": "Synchronization technology used"
+    }
+  },
+  "required": ["event_id", "event_type", "file_path", "agent_id", "logical_timestamp", "sync_method"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "event_id": "550e8400-e29b-41d4-a716-446655440000",
+      "event_type": "file_created",
+      "file_path": "Pending_Approval/email/reply-to-john.md",
+      "agent_id": "cloud",
+      "logical_timestamp": {
+        "agent_id": "cloud",
+        "counter": 42,
+        "wall_clock_time": "2026-04-03T14:30:00Z"
+      },
+      "sync_method": "git",
+      "git_commit_hash": "a3f2b1c"
+    },
+    {
+      "event_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "event_type": "conflict_detected",
+      "file_path": "In_Progress/cloud/task-123.json",
+      "agent_id": "local",
+      "logical_timestamp": {
+        "agent_id": "local",
+        "counter": 18
+      },
+      "conflict_resolution": "local_wins",
+      "sync_method": "git"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# Vault Sync .gitignore Template
+# Copy this to obsidian-vault/.gitignore for vault synchronization
+
+# Secrets and credentials (NEVER sync to cloud)
+.env
+*.env
+.env.*
+credentials.json
+tokens/
+*.session
+*.session-journal
+
+# WhatsApp session files (local only)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Banking credentials (local only)
+banking/credentials/
+plaid_tokens/
+
+# Obsidian workspace (user-specific)
+.obsidian/workspace*
+.obsidian/workspace.json
+
+# Temporary files
+*.tmp
+.sync-status/*.tmp
+
+# OS-specific
+.DS_Store
+Thumbs.db

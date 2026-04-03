@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Coordination Schema",
+  "description": "Schema for claim-by-move coordination between cloud and local agents",
+  "definitions": {
+    "claim_request": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the work queue item to claim"
+        },
+        "agent_id": {
+          "type": "string",
+          "enum": ["cloud", "local"],
+          "description": "Which agent is attempting to claim"
+        },
+        "logical_timestamp": {
+          "type": "object",
+          "properties": {
+            "agent_id": {
+              "type": "string",
+              "enum": ["cloud", "local"]
+            },
+            "counter": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": ["agent_id", "counter"],
+          "additionalProperties": false
+        },
+        "source_path": {
+          "type": "string",
+          "description": "Current path of the item (e.g., Needs_Action/email/task-123.json)"
+        },
+        "target_path": {
+          "type": "string",
+          "description": "Destination path after claim (e.g., In_Progress/local/task-123.json)"
+        }
+      },
+      "required": ["item_id", "agent_id", "logical_timestamp", "source_path", "target_path"],
+      "additionalProperties": false
+    },
+    "claim_response": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Whether the claim was successful"
+        },
+        "claimed_by": {
+          "type": "string",
+          "enum": ["cloud", "local"],
+          "description": "Which agent successfully claimed the item"
+        },
+        "conflict_detected": {
+          "type": "boolean",
+          "description": "Whether another agent tried to claim simultaneously"
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Error details if claim failed"
+        },
+        "winning_timestamp": {
+          "type": "object",
+          "properties": {
+            "agent_id": {
+              "type": "string",
+              "enum": ["cloud", "local"]
+            },
+            "counter": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": ["agent_id", "counter"],
+          "description": "Timestamp of the winning claim (for conflict resolution)"
+        }
+      },
+      "required": ["success", "claimed_by"],
+      "additionalProperties": false
+    },
+    "release_request": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "agent_id": {
+          "type": "string",
+          "enum": ["cloud", "local"]
+        },
+        "completion_status": {
+          "type": "string",
+          "enum": ["completed", "failed", "abandoned"]
+        },
+        "logical_timestamp": {
+          "type": "object",
+          "properties": {
+            "agent_id": {
+              "type": "string",
+              "enum": ["cloud", "local"]
+            },
+            "counter": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": ["agent_id", "counter"]
+        },
+        "source_path": {
+          "type": "string",
+          "description": "Current path (e.g., In_Progress/local/task-123.json)"
+        },
+        "target_path": {
+          "type": "string",
+          "description": "Destination path (e.g., Done/task-123.json or Needs_Action/email/task-123.json)"
+        }
+      },
+      "required": ["item_id", "agent_id", "completion_status", "logical_timestamp", "source_path", "target_path"],
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "claim_request": {
+        "item_id": "550e8400-e29b-41d4-a716-446655440000",
+        "agent_id": "local",
+        "logical_timestamp": {
+          "agent_id": "local",
+          "counter": 17
+        },
+        "source_path": "Needs_Action/email/task-123.json",
+        "target_path": "In_Progress/local/task-123.json"
+      }
+    },
+    {
+      "claim_response": {
+        "success": true,
+        "claimed_by": "local",
+        "conflict_detected": false
+      }
+    },
+    {
+      "claim_response": {
+        "success": false,
+        "claimed_by": "cloud",
+        "conflict_detected": true,
+        "error_message": "Item already claimed by cloud agent",
+        "winning_timestamp": {
+          "agent_id": "cloud",
+          "counter": 42
+        }
+      }
+    },
+    {
+      "release_request": {
+        "item_id": "550e8400-e29b-41d4-a716-446655440000",
+        "agent_id": "local",
+        "completion_status": "completed",
+        "logical_timestamp": {
+          "agent_id": "local",
+          "counter": 19
+        },
+        "source_path": "In_Progress/local/task-123.json",
+        "target_path": "Done/task-123.json"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+[Unit]
+Description=Odoo 17.0 Community Edition
+Documentation=https://www.odoo.com/documentation/17.0/
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=odoo
+Group=odoo
+
+# Odoo executable and configuration
+ExecStart=/usr/bin/odoo --config=/etc/odoo/odoo.conf
+
+# Working directory
+WorkingDirectory=/var/lib/odoo
+
+# Environment
+Environment="PATH=/usr/bin:/usr/local/bin"
+
+# Resource limits (Phase 6 requirements: 2-3 workers, 256MB shared_buffers)
+# Memory: 2GB limit (allows 2-3 workers with 256MB each + overhead)
+MemoryLimit=2G
+MemoryHigh=1.8G
+
+# CPU: 80% limit (prevent runaway processes)
+CPUQuota=80%
+
+# File descriptors (Odoo needs many for database connections)
+LimitNOFILE=65536
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Graceful shutdown (give Odoo time to finish requests)
+TimeoutStopSec=30s
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/odoo /var/log/odoo
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=odoo
+
+[Install]
+WantedBy=multi-user.target

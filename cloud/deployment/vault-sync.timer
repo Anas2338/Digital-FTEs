@@ -1,0 +1,11 @@
+[Unit]
+Description=Vault Sync Timer for Platinum Tier
+Documentation=https://github.com/your-org/digital-fte
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

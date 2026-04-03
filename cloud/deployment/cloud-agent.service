@@ -1,0 +1,48 @@
+[Unit]
+Description=Cloud Agent - Autonomous Python Service for Platinum Tier
+Documentation=https://github.com/your-org/digital-fte
+After=network-online.target vault-sync.timer
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cloudagent
+Group=cloudagent
+WorkingDirectory=/opt/cloud-agent
+Environment="PATH=/opt/cloud-agent/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/cloud-agent/.venv/bin/python -u /opt/cloud-agent/cloud/agent/cloud_agent.py /opt/cloud-agent/config/agent-config.json
+
+# Restart policy (FR-002: automatic restart on failure)
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Graceful shutdown
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cloud-agent
+
+# Resource limits (prevent runaway processes)
+MemoryMax=512M
+MemoryHigh=400M
+CPUQuota=50%
+TasksMax=100
+
+# Security hardening
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/cloud-agent/data /opt/cloud-agent/obsidian-vault
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

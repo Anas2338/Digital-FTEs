@@ -1,0 +1,18 @@
+[Unit]
+Description=Vault Sync Service for Platinum Tier
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=cloudagent
+WorkingDirectory=/opt/cloud-agent
+ExecStart=/opt/cloud-agent/cloud/deployment/sync-vault.sh
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vault-sync
+
+[Install]
+WantedBy=multi-user.target
