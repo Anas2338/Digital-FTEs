@@ -307,7 +307,7 @@ class GmailWatcher:
 def main():
     """Main entry point for Gmail watcher."""
     # Load environment variables
-    load_dotenv('watchers/.env')
+    load_dotenv('.env')
 
     # Get configuration from environment
     label_name = os.getenv('GMAIL_LABEL', 'ToVault')

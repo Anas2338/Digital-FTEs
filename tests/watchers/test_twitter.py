@@ -23,7 +23,7 @@ def main():
     print("\n1. Attempting to connect to Twitter API...")
     if not client.connect():
         print("[FAILED] Could not connect to Twitter")
-        print("\nPlease check your credentials in watchers/.env:")
+        print("\nPlease check your credentials in .env:")
         print("  - TWITTER_CONSUMER_KEY")
         print("  - TWITTER_CONSUMER_SECRET")
         print("  - TWITTER_ACCESS_TOKEN")
