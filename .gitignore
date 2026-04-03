@@ -53,3 +53,16 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# Environment variables (CRITICAL - never commit)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Credentials and secrets
+credentials.json
+*token*.json
+*.key
+*.pem
+*.p12

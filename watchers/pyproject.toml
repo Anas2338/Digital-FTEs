@@ -1,12 +1,23 @@
 [project]
 name = "digital-fte-watchers"
 version = "0.1.0"
-description = "Gmail watcher for Digital FTE Obsidian vault integration"
+description = "Digital FTE Watchers - Event monitoring and data collection"
 requires-python = ">=3.11"
 dependencies = [
-    "google-api-python-client>=2.108.0",
-    "google-auth-httplib2>=0.2.0",
-    "google-auth-oauthlib>=1.2.0",
-    "pyyaml>=6.0.1",
     "python-dotenv>=1.0.0",
+    "odoorpc>=0.9.0",
+    "facebook-sdk>=3.1.0",
+    "tweepy>=4.14.0",
+    "schedule>=1.2.0",
+    "keyring>=24.0.0",
+    "requests>=2.31.0",
+    "cryptography>=41.0.0",
+    "pyyaml>=6.0.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["odoo_watcher", "briefing_watcher", "shared"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

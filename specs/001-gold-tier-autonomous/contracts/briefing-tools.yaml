@@ -1,0 +1,480 @@
+openapi: 3.0.0
+info:
+  title: CEO Briefing MCP Tools
+  description: MCP tools for weekly CEO briefing generation and management
+  version: 1.0.0
+
+paths:
+  /tools/generate_briefing:
+    post:
+      summary: Generate weekly CEO briefing
+      description: |
+        Generates a comprehensive weekly executive briefing containing financial summary,
+        social media performance, completed tasks, and action items.
+        Scheduled to run every Monday at 8:00 AM local time.
+        Safety Level: 1 (Notify) - Creates briefing, notifies user when complete.
+      operationId: generate_briefing
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                week_number:
+                  type: integer
+                  description: ISO week number (auto-detected if not provided)
+                  example: 14
+                  minimum: 1
+                  maximum: 53
+                year:
+                  type: integer
+                  description: Year (auto-detected if not provided)
+                  example: 2026
+                  minimum: 2020
+                  maximum: 2100
+                force_regenerate:
+                  type: boolean
+                  description: Regenerate even if briefing already exists
+                  default: false
+                include_charts:
+                  type: boolean
+                  description: Include ASCII charts in briefing
+                  default: true
+      responses:
+        '200':
+          description: Briefing generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  briefing_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  week_number:
+                    type: integer
+                    example: 14
+                  year:
+                    type: integer
+                    example: 2026
+                  period:
+                    type: object
+                    properties:
+                      start:
+                        type: string
+                        format: date
+                        example: "2026-03-31"
+                      end:
+                        type: string
+                        format: date
+                        example: "2026-04-06"
+                  markdown_path:
+                    type: string
+                    description: Path to generated Markdown file
+                    example: "obsidian-vault/Briefings/2026-14.md"
+                  generated_at:
+                    type: string
+                    format: date-time
+                    example: "2026-04-07T08:00:00Z"
+                  summary:
+                    type: object
+                    properties:
+                      financial:
+                        type: object
+                        properties:
+                          revenue:
+                            type: number
+                            example: 12450.00
+                          expenses:
+                            type: number
+                            example: 3200.00
+                          profit:
+                            type: number
+                            example: 9250.00
+                          change_from_last_week:
+                            type: object
+                            properties:
+                              revenue_percent:
+                                type: number
+                                example: 22.0
+                              expenses_percent:
+                                type: number
+                                example: -9.0
+                              profit_percent:
+                                type: number
+                                example: 38.0
+                      social_media:
+                        type: object
+                        properties:
+                          total_posts:
+                            type: integer
+                            example: 15
+                          total_engagement:
+                            type: integer
+                            example: 781
+                          top_platform:
+                            type: string
+                            example: "instagram"
+                      tasks:
+                        type: object
+                        properties:
+                          completed:
+                            type: integer
+                            example: 12
+                          pending:
+                            type: integer
+                            example: 5
+                      critical_issues:
+                        type: integer
+                        example: 2
+        '409':
+          description: Briefing already exists for this week
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Briefing already exists for week 14, 2026"
+                  existing_briefing_id:
+                    type: string
+                    format: uuid
+        '400':
+          description: Invalid week number or year
+        '503':
+          description: Required services unavailable (Odoo, social media APIs)
+
+  /tools/get_briefing:
+    post:
+      summary: Retrieve an existing CEO briefing
+      description: |
+        Fetches a previously generated CEO briefing by week number and year.
+        Safety Level: 0 (Auto-Execute) - Read-only operation.
+      operationId: get_briefing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - week_number
+                - year
+              properties:
+                week_number:
+                  type: integer
+                  description: ISO week number
+                  example: 14
+                  minimum: 1
+                  maximum: 53
+                year:
+                  type: integer
+                  description: Year
+                  example: 2026
+                  minimum: 2020
+                  maximum: 2100
+                format:
+                  type: string
+                  enum: [json, markdown]
+                  description: Response format
+                  default: json
+      responses:
+        '200':
+          description: Briefing retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  briefing_id:
+                    type: string
+                    format: uuid
+                  week_number:
+                    type: integer
+                    example: 14
+                  year:
+                    type: integer
+                    example: 2026
+                  generated_at:
+                    type: string
+                    format: date-time
+                  content:
+                    type: string
+                    description: Briefing content (JSON or Markdown based on format parameter)
+                  markdown_path:
+                    type: string
+                    description: Path to Markdown file
+        '404':
+          description: Briefing not found for specified week/year
+        '400':
+          description: Invalid week number or year
+
+  /tools/list_briefings:
+    post:
+      summary: List all CEO briefings
+      description: |
+        Returns a list of all generated CEO briefings, optionally filtered by date range.
+        Safety Level: 0 (Auto-Execute) - Read-only operation.
+      operationId: list_briefings
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                year:
+                  type: integer
+                  description: Filter by year (all years if not provided)
+                  example: 2026
+                start_week:
+                  type: integer
+                  description: Start week number (inclusive)
+                  example: 1
+                  minimum: 1
+                  maximum: 53
+                end_week:
+                  type: integer
+                  description: End week number (inclusive)
+                  example: 52
+                  minimum: 1
+                  maximum: 53
+                limit:
+                  type: integer
+                  description: Maximum number of briefings to return
+                  default: 52
+                  minimum: 1
+                  maximum: 100
+      responses:
+        '200':
+          description: Briefings list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  total_count:
+                    type: integer
+                    example: 14
+                  briefings:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        briefing_id:
+                          type: string
+                          format: uuid
+                        week_number:
+                          type: integer
+                          example: 14
+                        year:
+                          type: integer
+                          example: 2026
+                        period:
+                          type: object
+                          properties:
+                            start:
+                              type: string
+                              format: date
+                            end:
+                              type: string
+                              format: date
+                        generated_at:
+                          type: string
+                          format: date-time
+                        summary:
+                          type: object
+                          properties:
+                            revenue:
+                              type: number
+                            profit:
+                              type: number
+                            total_posts:
+                              type: integer
+                            tasks_completed:
+                              type: integer
+                            critical_issues:
+                              type: integer
+                        markdown_path:
+                          type: string
+        '400':
+          description: Invalid parameters
+
+  /tools/add_critical_issue:
+    post:
+      summary: Add a critical issue to the current week's briefing
+      description: |
+        Adds a critical issue that requires attention to the briefing being generated.
+        Issues are highlighted in the "Requires Attention" section.
+        Safety Level: 1 (Notify) - Modifies briefing content.
+      operationId: add_critical_issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - priority
+              properties:
+                title:
+                  type: string
+                  description: Issue title
+                  example: "Invoice #1234 overdue by 5 days"
+                  maxLength: 200
+                description:
+                  type: string
+                  description: Detailed description
+                  example: "Customer ABC has not paid invoice #1234 ($5,000)"
+                  maxLength: 1000
+                priority:
+                  type: string
+                  enum: [high, medium, low]
+                  description: Issue priority
+                  example: high
+                action_required:
+                  type: string
+                  description: Recommended action
+                  example: "Follow up with customer via email"
+                  maxLength: 500
+                related_entity_id:
+                  type: string
+                  format: uuid
+                  description: Related transaction/post/task ID (optional)
+                week_number:
+                  type: integer
+                  description: Target week (current week if not provided)
+                  example: 14
+                year:
+                  type: integer
+                  description: Target year (current year if not provided)
+                  example: 2026
+      responses:
+        '200':
+          description: Critical issue added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  issue_id:
+                    type: string
+                    format: uuid
+                  briefing_id:
+                    type: string
+                    format: uuid
+                    description: Briefing this issue was added to
+                  added_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid parameters
+        '404':
+          description: Briefing not found for specified week/year
+
+  /tools/schedule_briefing:
+    post:
+      summary: Configure briefing generation schedule
+      description: |
+        Updates the schedule for automatic CEO briefing generation.
+        Default: Every Monday at 8:00 AM local time.
+        Safety Level: 2 (Confirm) - Changes system behavior.
+      operationId: schedule_briefing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+                  description: Enable/disable automatic generation
+                  example: true
+                day_of_week:
+                  type: string
+                  enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+                  description: Day of week for generation
+                  default: monday
+                time:
+                  type: string
+                  pattern: "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"
+                  description: Time of day (HH:MM in 24-hour format)
+                  example: "08:00"
+                  default: "08:00"
+                timezone:
+                  type: string
+                  description: Timezone (uses system timezone if not provided)
+                  example: "America/New_York"
+      responses:
+        '200':
+          description: Schedule updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  schedule:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                        example: true
+                      day_of_week:
+                        type: string
+                        example: monday
+                      time:
+                        type: string
+                        example: "08:00"
+                      timezone:
+                        type: string
+                        example: "America/New_York"
+                      next_run:
+                        type: string
+                        format: date-time
+                        description: Next scheduled generation time
+                        example: "2026-04-07T08:00:00-04:00"
+        '400':
+          description: Invalid schedule parameters
+        '403':
+          description: User approval required but not granted
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        error_code:
+          type: string
+          description: Machine-readable error code

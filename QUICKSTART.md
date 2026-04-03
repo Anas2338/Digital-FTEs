@@ -1,420 +1,331 @@
-# Digital FTE - Quick Start Guide
+# Gold Tier Digital FTE - Quickstart Guide
 
-**Status**: ✅ All code complete - Ready for testing
+Complete setup and validation guide for Gold Tier autonomous AI agent.
 
-This guide will get you from zero to a working Digital FTE system in ~30 minutes.
+## Prerequisites
 
----
+- Python 3.11+
+- uv package manager
+- Obsidian (for vault visualization)
+- Git
 
-## Prerequisites Checklist
+## 1. Initial Setup
 
-- [ ] Python 3.11+ installed
-- [ ] uv package manager installed (`pip install uv`)
-- [ ] Node.js 18+ installed (for WhatsApp)
-- [ ] Obsidian installed
-- [ ] Google account with Gmail access
-- [ ] Claude Code CLI or desktop app
-
----
-
-## Step 1: Install Dependencies (5 minutes)
+### Install Dependencies
 
 ```bash
-# Clone and navigate to project
-cd Digital-FTEs
+# Install uv package manager
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install watcher dependencies
+# Sync watchers dependencies
 cd watchers
 uv sync
-cd ..
 
-# Install MCP server dependencies
-cd mcp-servers/digital-fte-server
+# Sync MCP server dependencies
+cd ../mcp-servers/digital-fte-server
 uv sync
-cd ../..
 
-# Install WhatsApp bridge (optional)
-cd watchers/whatsapp_watcher
-npm install
+# Return to project root
 cd ../..
 ```
 
-**Checkpoint**: Run `uv --version` and verify it shows version info.
-
----
-
-## Step 2: Set Up Gmail API (10-15 minutes)
-
-**This is required for email functionality.**
-
-### 2.1 Create Google Cloud Project
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Click "Select a project" → "New Project"
-3. Name: "Digital FTE"
-4. Click "Create"
-
-### 2.2 Enable Gmail API
-
-1. In the search bar, type "Gmail API"
-2. Click "Gmail API" → "Enable"
-
-### 2.3 Configure OAuth Consent Screen
-
-1. Go to "APIs & Services" → "OAuth consent screen"
-2. User Type: **External**
-3. Click "Create"
-4. Fill in:
-   - App name: "Digital FTE"
-   - User support email: your email
-   - Developer contact: your email
-5. Click "Save and Continue"
-6. Scopes: Click "Add or Remove Scopes"
-   - Search for "gmail"
-   - Select: `gmail.readonly` and `gmail.send`
-   - Click "Update" → "Save and Continue"
-7. Test users: Click "Add Users"
-   - Add your email address
-   - Click "Save and Continue"
-8. Click "Back to Dashboard"
-
-### 2.4 Create OAuth Credentials
-
-1. Go to "APIs & Services" → "Credentials"
-2. Click "Create Credentials" → "OAuth client ID"
-3. Application type: **Desktop app**
-4. Name: "Digital FTE Desktop"
-5. Click "Create"
-6. Click "Download JSON"
-7. Rename downloaded file to `credentials.json`
-8. Move to project root: `Digital-FTEs/credentials.json`
-
-### 2.5 Test Authentication
+### Setup Vault Structure
 
 ```bash
-# From project root
-python test_gmail_auth.py
+uv run python scripts/setup_gold_tier_vault.py
 ```
 
-**Expected**:
-- Browser window opens
-- Sign in to Google
-- Grant permissions
-- See: "✓ Gmail authentication successful!"
-- Token saved to `watchers/.auth/gmail_token.json`
+This creates the complete Obsidian vault structure with all required directories.
 
-**Checkpoint**: Verify `watchers/.auth/gmail_token.json` exists.
+## 2. Configure Integrations
 
----
-
-## Step 3: Initialize Database (1 minute)
+### Create .env File
 
 ```bash
-python -c "from watchers.shared.database import Database; Database()"
+# Copy the example
+cp .env.example .env
+
+# Edit with your credentials
+nano .env  # or use your preferred editor
 ```
 
-**Checkpoint**: Verify `watchers/watchers.db` file exists.
+### Fill in Credentials
 
----
+Edit `.env` with your actual credentials:
 
-## Step 4: Start MCP Server (2 minutes)
+```env
+# Odoo Community Edition 19+
+ODOO_URL=https://your-odoo-instance.com
+ODOO_DATABASE=your_database_name
+ODOO_USERNAME=admin
+ODOO_PASSWORD=your_password
+
+# Facebook
+FACEBOOK_ACCESS_TOKEN=your_facebook_page_access_token
+FACEBOOK_PAGE_ID=your_facebook_page_id
+
+# Twitter/X
+TWITTER_CONSUMER_KEY=your_consumer_key
+TWITTER_CONSUMER_SECRET=your_consumer_secret
+TWITTER_ACCESS_TOKEN=your_access_token
+TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret
+
+# Instagram
+INSTAGRAM_ACCOUNT_ID=your_instagram_business_account_id
+INSTAGRAM_ACCESS_TOKEN=your_instagram_access_token
+```
+
+### Verify Configuration
+
+```bash
+uv run python scripts/verify_env.py
+```
+
+Expected output: `✓ SUCCESS: All credentials verified`
+
+### Test Connections
+
+#### Test Odoo
+
+```bash
+uv run python watchers/odoo_watcher/test_connection.py
+```
+
+Expected output: `✓ Odoo connection successful`
+
+#### Test Social Media
+
+```bash
+uv run python watchers/social_media_watcher/test_connections.py
+```
+
+Expected output:
+```
+✓ facebook: Connected
+✓ twitter: Connected
+✓ instagram: Connected
+```
+
+## 3. Start Watchers
+
+### Odoo Watcher (5-minute polling)
+
+```bash
+uv run python watchers/odoo_watcher/watcher.py
+```
+
+### Social Media Watcher (5-minute polling)
+
+```bash
+uv run python watchers/social_media_watcher/watcher.py
+```
+
+### CEO Briefing Watcher (Monday 8 AM)
+
+```bash
+uv run python watchers/briefing_watcher/watcher.py
+```
+
+## 4. Start MCP Server
 
 ```bash
 cd mcp-servers/digital-fte-server
-uvicorn server:app --host 0.0.0.0 --port 8000 &
-cd ../..
+uv run uvicorn server:app --host 0.0.0.0 --port 8000
 ```
 
-**Test**:
+Test server health:
 ```bash
 curl http://localhost:8000/health
 ```
 
-**Expected**: `{"status":"healthy"}`
+Expected output: `{"status":"healthy",...}`
 
-**Checkpoint**: MCP server responds to health check.
+## 5. Validation Tests
 
----
-
-## Step 5: Validate Setup (1 minute)
+### Test Odoo Integration
 
 ```bash
-python scripts/setup/validate_setup.py
-```
-
-**Expected output**:
-```
-✓ Database validation passed
-✓ Vault structure validation passed
-✓ Watcher health check passed
-✓ MCP server health check passed
-✓ Scheduler validation passed
-✓ Agent skills validation passed
-
-SUMMARY: 6/6 tests passed
-```
-
-**Checkpoint**: All 6 tests pass.
-
----
-
-## Step 6: Test Gmail Integration (5 minutes)
-
-### 6.1 Create Gmail Label
-
-1. Open Gmail in browser
-2. Click "Settings" (gear icon) → "See all settings"
-3. Go to "Labels" tab
-4. Scroll to "Labels" section
-5. Click "Create new label"
-6. Name: `ToVault`
-7. Click "Create"
-
-### 6.2 Start Gmail Watcher
-
-```bash
-cd watchers
-python -m gmail_watcher.watcher &
-cd ..
-```
-
-**Expected output**:
-```
-[INFO] Initializing Gmail watcher...
-[INFO] Label: ToVault
-[OK] Gmail API authenticated successfully
-[INFO] Label ID: Label_xxx
-[INFO] Starting watcher loop...
-```
-
-### 6.3 Test Email Capture
-
-1. Send yourself a test email
-2. In Gmail, apply label "ToVault" to the email
-3. Wait 3 minutes (polling interval)
-4. Check `obsidian-vault/Inbox/` for new note
-
-**Expected**: Note created with email subject, sender, date, body.
-
-**Checkpoint**: Email appears as note in Obsidian vault.
-
----
-
-## Step 7: Test Send Email Tool (5 minutes)
-
-### 7.1 Test via Python
-
-```bash
-cd mcp-servers/digital-fte-server
-python -c "
-from tools.send_email import SendEmailTool
-tool = SendEmailTool()
-result = tool.execute(
-    recipient='your-email@gmail.com',
-    subject='Test from Digital FTE',
-    body='This is a test email from the Digital FTE system.'
-)
-print(result)
-"
-cd ../..
-```
-
-**Expected**:
-```json
-{
-  "success": true,
-  "message_id": "...",
-  "recipient": "your-email@gmail.com",
-  "subject": "Test from Digital FTE"
-}
-```
-
-### 7.2 Test via MCP Server
-
-```bash
+# Record a test transaction
 curl -X POST http://localhost:8000/tools/invoke \
   -H "Content-Type: application/json" \
   -d '{
-    "tool": "send-email",
+    "tool": "odoo-record-transaction",
     "parameters": {
-      "recipient": "your-email@gmail.com",
-      "subject": "Test via MCP",
-      "body": "This email was sent via the MCP server."
+      "amount": 1000.00,
+      "date": "2026-04-01",
+      "description": "Test transaction",
+      "category": "Revenue"
     }
   }'
 ```
 
-**Expected**: Email sent, check your inbox.
+Verify in: `obsidian-vault/Accounting/transactions.db`
 
-**Checkpoint**: Receive test email in Gmail.
-
----
-
-## Step 8: Test Approval Workflow (5 minutes)
-
-### 8.1 Queue an Action
+### Test Social Media Posting
 
 ```bash
+# Create a test post
 curl -X POST http://localhost:8000/tools/invoke \
   -H "Content-Type: application/json" \
   -d '{
-    "tool": "send-email",
+    "tool": "social-post",
     "parameters": {
-      "recipient": "someone@example.com",
-      "subject": "Important Business Email",
-      "body": "This requires approval."
+      "content": "Test post from Digital FTE",
+      "platforms": ["twitter"]
     }
   }'
 ```
 
-**Expected**:
-```json
-{
-  "status": "pending_approval",
-  "action_id": "action-20260331...",
-  "message": "Action queued for approval"
-}
-```
+Verify in: Social media platform and `social_media_posts` table
 
-### 8.2 Check Approval Queue
+### Test CEO Briefing Generation
 
 ```bash
-cd mcp-servers/digital-fte-server
-python -m approval.cli list
-cd ../..
+# Manually trigger briefing generation
+uv run python watchers/briefing_watcher/watcher.py --generate-now
 ```
 
-**Expected**: Shows pending action with details.
+Verify in: `obsidian-vault/Briefings/YYYY-WW.md`
 
-### 8.3 Approve Action
+### Test Autonomous Task Execution
 
 ```bash
-cd mcp-servers/digital-fte-server
-python -m approval.cli approve action-20260331...
-cd ../..
+uv run python scripts/demo_autonomous_task.py
 ```
 
-**Expected**: Action approved and executed, email sent.
+Expected output: Task completes all steps autonomously
 
-**Checkpoint**: Approval workflow works end-to-end.
-
----
-
-## Step 9: Open Obsidian Vault (2 minutes)
-
-1. Open Obsidian
-2. Click "Open folder as vault"
-3. Navigate to `Digital-FTEs/obsidian-vault`
-4. Click "Open"
-
-**Explore**:
-- `Inbox/` - Captured emails
-- `Approvals/` - Pending approvals
-- `Content_Queue/` - Scheduled LinkedIn posts
-- `Schedules/` - Scheduled tasks
-
-**Checkpoint**: Obsidian vault opens and shows folder structure.
-
----
-
-## Step 10: Test with Claude Code (Optional)
-
-If you have Claude Code installed:
+### Test Circuit Breaker
 
 ```bash
-claude-code "Check watcher status"
+# Simulate failure by disconnecting Odoo
+# Then check circuit breaker opens
+
+uv run python scripts/daily_health_check.py
 ```
 
-**Expected**: Claude uses watcher-status skill to report health.
+Expected output: Circuit breaker OPEN for odoo_integration
 
 ```bash
-claude-code "Send a test email to myself"
+# Reset circuit breaker after fixing issue
+uv run python watchers/shared/reset_circuit_breaker.py --reset odoo_integration
 ```
 
-**Expected**: Claude queues email for approval.
+## 6. Daily Operations
 
----
+### Health Check
 
-## What's Next?
+Run daily to verify system health:
 
-### Immediate Testing
-- [ ] Send more test emails with ToVault label
-- [ ] Test approval workflow with different action types
-- [ ] Create a scheduled LinkedIn post in Content_Queue/
-- [ ] Create a complex task in Needs_Action/ to trigger reasoning loop
-
-### Optional Setup
-- [ ] Set up WhatsApp watcher (requires phone authentication)
-- [ ] Set up LinkedIn watcher (requires session cookies)
-- [ ] Configure scheduled tasks (daily reports, weekly summaries)
-- [ ] Customize approval rules in `mcp-servers/digital-fte-server/approval/classifier.py`
-
-### Production Readiness
-- [ ] Set up systemd services (Linux) or Task Scheduler (Windows) for watchers
-- [ ] Configure log rotation
-- [ ] Set up monitoring and alerting
-- [ ] Create backup strategy for database and vault
-- [ ] Review security settings and rate limits
-
----
-
-## Troubleshooting
-
-### "credentials.json not found"
-- Ensure file is in project root: `Digital-FTEs/credentials.json`
-- Check file name is exactly `credentials.json` (case-sensitive)
-
-### "Token has been expired or revoked"
 ```bash
-rm watchers/.auth/gmail_token.json
-python test_gmail_auth.py
+uv run python scripts/daily_health_check.py
 ```
 
-### "MCP server not responding"
+### View Integration Status
+
 ```bash
-# Check if running
-curl http://localhost:8000/health
-
-# Restart
-cd mcp-servers/digital-fte-server
-pkill -f uvicorn
-uvicorn server:app --host 0.0.0.0 --port 8000 &
+uv run python watchers/shared/view_integration_status.py
 ```
 
-### "Watcher not capturing emails"
-- Verify label "ToVault" exists in Gmail
-- Check watcher logs: `watchers/logs/gmail_watcher.log`
-- Verify polling interval (default: 180 seconds = 3 minutes)
+### Check Audit Logs
 
-### "Validation tests failing"
 ```bash
-# Re-initialize database
-python -c "from watchers.shared.database import Database; Database()"
-
-# Re-run validation
-python scripts/setup/validate_setup.py
+# View recent audit log entries
+sqlite3 obsidian-vault/Audit_Logs/audit.db "SELECT * FROM audit_log ORDER BY sequence_number DESC LIMIT 10"
 ```
 
----
+### Verify Hash Chain Integrity
 
-## Documentation
+```bash
+uv run python -c "from watchers.shared.audit_logger import AuditLogger; al = AuditLogger(); print('✓ Hash chain valid' if al.verify_hash_chain() else '✗ Hash chain broken')"
+```
 
-- **Gmail Setup**: [docs/gmail-setup-guide.md](docs/gmail-setup-guide.md)
-- **Implementation Status**: [docs/implementation-status.md](docs/implementation-status.md)
-- **API Migration**: [docs/migration-to-official-apis.md](docs/migration-to-official-apis.md)
-- **Full README**: [README.md](README.md)
+## 7. Troubleshooting
 
----
+### Circuit Breaker Stuck Open
+
+```bash
+# List all circuit breakers
+uv run python watchers/shared/reset_circuit_breaker.py --list
+
+# Reset specific breaker
+uv run python watchers/shared/reset_circuit_breaker.py --reset <integration_name>
+
+# Reset all open breakers
+uv run python watchers/shared/reset_circuit_breaker.py --reset-all
+```
+
+### Watcher Not Running
+
+Check watcher health:
+```bash
+uv run python watchers/shared/view_integration_status.py
+```
+
+Check logs:
+```bash
+tail -f watchers/logs/watcher.log
+```
+
+### Database Locked
+
+```bash
+# Close all connections and restart watchers
+pkill -f "uv run python watchers"
+sleep 2
+# Restart watchers
+```
+
+### High Error Rate
+
+```bash
+# Check recent errors
+uv run python scripts/daily_health_check.py
+
+# Review audit log
+sqlite3 obsidian-vault/Audit_Logs/audit.db "SELECT * FROM audit_log WHERE action_type LIKE '%failed%' ORDER BY timestamp DESC LIMIT 20"
+```
+
+## 8. Security Checklist
+
+- [ ] All credentials stored in .env file (never committed to git)
+- [ ] .env file in .gitignore
+- [ ] OAuth2 used for all external APIs
+- [ ] PII redacted in audit logs
+- [ ] Hash chain integrity verified
+- [ ] Action safety levels enforced (0-3)
+- [ ] Rate limits configured (10 posts/day, 100 emails/day)
+- [ ] Circuit breakers protecting all integrations
+- [ ] Audit logging enabled for all actions
+
+## 9. Constitution Compliance
+
+Verify compliance with `.specify/memory/constitution.md`:
+
+- [ ] Local-first: All data in Obsidian vault
+- [ ] Privacy-first: No cloud sync without consent
+- [ ] Autonomous: Watchers run 24/7
+- [ ] Separation of concerns: Brain/Memory/Senses/Hands
+- [ ] Event-driven: Watchers emit events
+- [ ] Action safety: 4-level approval system
+- [ ] Dual-tier LLM: Claude OR Gemini
+
+## 10. Success Criteria
+
+Gold Tier is operational when:
+
+- [ ] All integration connection tests pass
+- [ ] Odoo watcher syncing transactions (5-min interval)
+- [ ] Social media watcher monitoring engagement (5-min interval)
+- [ ] CEO briefing generated Monday 8 AM
+- [ ] Circuit breakers protecting all integrations
+- [ ] Audit logging with hash chain integrity
+- [ ] Autonomous tasks executing via Ralph Loop
+- [ ] Daily health check passing
+- [ ] 80%+ test coverage
 
 ## Support
 
-- Check logs: `watchers/logs/`
-- Review database: `sqlite3 watchers/watchers.db`
-- Inspect vault: `obsidian-vault/`
-- Run validation: `python scripts/setup/validate_setup.py`
-
----
-
-**Estimated Total Time**: 30-40 minutes
-**Status**: ✅ Ready to test
-**Last Updated**: 2026-03-31
+- Issues: https://github.com/anthropics/claude-code/issues
+- Documentation: `.specify/memory/constitution.md`
+- Architecture: `specs/001-gold-tier-autonomous/plan.md`
