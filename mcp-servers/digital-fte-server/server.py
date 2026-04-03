@@ -21,6 +21,22 @@ from rate_limiter import RateLimiter
 from tools.send_email import SendEmailTool
 from tools.linkedin_post import LinkedInPostTool
 from tools.whatsapp_send import WhatsAppSendTool
+from tools.social_media.social_post import SocialPostTool
+from tools.social_media.social_get_engagement import SocialGetEngagementTool
+from tools.social_media.social_check_connection import SocialCheckConnectionTool
+from tools.social_media.social_delete_post import SocialDeletePostTool
+from tools.odoo_record_transaction import OdooRecordTransactionTool
+from tools.odoo_query_financials import OdooQueryFinancialsTool
+from tools.odoo_check_connection import OdooCheckConnectionTool
+from tools.odoo_get_transactions import OdooGetTransactionsTool
+from tools.tasks.task_create import TaskCreateTool
+from tools.tasks.task_execute import TaskExecuteTool
+from tools.tasks.task_status import TaskStatusTool
+from tools.generate_briefing import GenerateBriefingTool
+from tools.get_briefing import GetBriefingTool
+from tools.add_critical_issue import AddCriticalIssueTool
+from tools.list_briefings import ListBriefingsTool
+from tools.schedule_briefing import ScheduleBriefingTool
 from approval.classifier import ActionClassifier
 from approval.queue import ApprovalQueueManager
 from approval.executor import ActionExecutor
@@ -43,7 +59,23 @@ executor = ActionExecutor()
 tools_registry = {
     "send-email": SendEmailTool(),
     "linkedin-post": LinkedInPostTool(),
-    "whatsapp-send": WhatsAppSendTool()
+    "whatsapp-send": WhatsAppSendTool(),
+    "social-post": SocialPostTool(),
+    "social-get-engagement": SocialGetEngagementTool(),
+    "social-check-connection": SocialCheckConnectionTool(),
+    "social-delete-post": SocialDeletePostTool(),
+    "odoo-record-transaction": OdooRecordTransactionTool(),
+    "odoo-query-financials": OdooQueryFinancialsTool(),
+    "odoo-get-transactions": OdooGetTransactionsTool(),
+    "odoo-check-connection": OdooCheckConnectionTool(),
+    "task-create": TaskCreateTool(),
+    "task-execute": TaskExecuteTool(),
+    "task-status": TaskStatusTool(),
+    "generate-briefing": GenerateBriefingTool(),
+    "get-briefing": GetBriefingTool(),
+    "add-critical-issue": AddCriticalIssueTool(),
+    "list-briefings": ListBriefingsTool(),
+    "schedule-briefing": ScheduleBriefingTool()
 }
 
 
@@ -119,6 +151,216 @@ async def list_tools() -> List[ToolDefinition]:
                 },
                 "required": ["recipient", "message"]
             }
+        ),
+        ToolDefinition(
+            name="social-post",
+            description="Create and publish a social media post",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "content": {"type": "string", "maxLength": 280},
+                    "platforms": {"type": "array", "items": {"type": "string", "enum": ["facebook", "twitter", "instagram"]}},
+                    "media_urls": {"type": "array", "items": {"type": "string", "format": "uri"}},
+                    "scheduled_time": {"type": "string", "format": "date-time"}
+                },
+                "required": ["content", "platforms"]
+            }
+        ),
+        ToolDefinition(
+            name="social-get-engagement",
+            description="Get engagement metrics for a social media post",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "post_id": {"type": "string"}
+                },
+                "required": ["post_id"]
+            }
+        ),
+        ToolDefinition(
+            name="social-check-connection",
+            description="Check connection status for a social media platform",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "platform": {"type": "string", "enum": ["facebook", "twitter", "instagram"]}
+                },
+                "required": ["platform"]
+            }
+        ),
+        ToolDefinition(
+            name="social-delete-post",
+            description="Delete a social media post",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "post_id": {"type": "string"}
+                },
+                "required": ["post_id"]
+            }
+        ),
+        ToolDefinition(
+            name="task-create",
+            description="Create a multi-step task for autonomous execution",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "maxLength": 200},
+                    "description": {"type": "string"},
+                    "steps": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "description": {"type": "string"},
+                                "action": {"type": "string"},
+                                "parameters": {"type": "object"},
+                                "validation_criteria": {"type": "object"}
+                            },
+                            "required": ["description", "action", "parameters"]
+                        }
+                    },
+                    "completion_criteria": {"type": "object"},
+                    "assigned_to": {"type": "string"},
+                    "priority": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
+                    "parent_task_id": {"type": "string"}
+                },
+                "required": ["title", "description", "steps", "completion_criteria"]
+            }
+        ),
+        ToolDefinition(
+            name="task-execute",
+            description="Execute a multi-step task autonomously",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string"}
+                },
+                "required": ["task_id"]
+            }
+        ),
+        ToolDefinition(
+            name="task-status",
+            description="Get status and progress of a multi-step task",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string"}
+                },
+                "required": ["task_id"]
+            }
+        ),
+        ToolDefinition(
+            name="odoo-record-transaction",
+            description="Record a business transaction from Odoo",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "amount": {"type": "number", "minimum": 0},
+                    "date": {"type": "string", "format": "date"},
+                    "description": {"type": "string"},
+                    "category": {"type": "string", "enum": ["Revenue", "COGS", "Operating Expenses", "Assets", "Liabilities", "Equity"]},
+                    "partner_name": {"type": "string"},
+                    "account_code": {"type": "string"}
+                },
+                "required": ["amount", "date", "description", "category", "account_code"]
+            }
+        ),
+        ToolDefinition(
+            name="odoo-query-financials",
+            description="Query financial data from Odoo",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "format": "date"},
+                    "end_date": {"type": "string", "format": "date"},
+                    "category": {"type": "string", "enum": ["Revenue", "COGS", "Operating Expenses", "Assets", "Liabilities", "Equity", "all"]}
+                },
+                "required": ["start_date", "end_date"]
+            }
+        ),
+        ToolDefinition(
+            name="odoo-check-connection",
+            description="Check Odoo connection status for circuit breaker health checks",
+            parameters={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        ToolDefinition(
+            name="odoo-get-transactions",
+            description="Get business transactions with optional filtering",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "format": "date"},
+                    "end_date": {"type": "string", "format": "date"},
+                    "category": {"type": "string", "enum": ["Revenue", "COGS", "Operating Expenses", "Assets", "Liabilities", "Equity"]},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100}
+                }
+            }
+        ),
+        ToolDefinition(
+            name="generate-briefing",
+            description="Generate comprehensive weekly CEO briefing with financial summary, social media performance, tasks, and critical issues",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "week_number": {"type": "integer", "minimum": 1, "maximum": 53},
+                    "year": {"type": "integer", "minimum": 2020, "maximum": 2100},
+                    "force_regenerate": {"type": "boolean", "default": False}
+                }
+            }
+        ),
+        ToolDefinition(
+            name="get-briefing",
+            description="Retrieve a previously generated CEO briefing",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "week_number": {"type": "integer", "minimum": 1, "maximum": 53},
+                    "year": {"type": "integer", "minimum": 2020, "maximum": 2100}
+                }
+            }
+        ),
+        ToolDefinition(
+            name="add-critical-issue",
+            description="Add a critical issue to the current week's briefing for immediate attention",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "maxLength": 200},
+                    "description": {"type": "string", "maxLength": 1000},
+                    "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"], "default": "high"},
+                    "week_number": {"type": "integer", "minimum": 1, "maximum": 53},
+                    "year": {"type": "integer", "minimum": 2020, "maximum": 2100}
+                },
+                "required": ["title", "description"]
+            }
+        ),
+        ToolDefinition(
+            name="list-briefings",
+            description="List all available CEO briefings with metadata",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 10},
+                    "year": {"type": "integer", "minimum": 2020, "maximum": 2100}
+                }
+            }
+        ),
+        ToolDefinition(
+            name="schedule-briefing",
+            description="Schedule or reschedule the weekly CEO briefing generation",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "day_of_week": {"type": "string", "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]},
+                    "time_str": {"type": "string", "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"},
+                    "timezone": {"type": "string"}
+                },
+                "required": ["day_of_week", "time_str"]
+            }
         )
     ]
     return tools
@@ -188,21 +430,30 @@ async def invoke_tool(invocation: ToolInvocation) -> ToolResponse:
                 status="executing"
             )
 
-            # Execute the tool
+            # Execute the tool - generic execution for all tools
             tool = tools_registry[invocation.tool]
-            if invocation.tool == "send-email":
-                result = tool.execute(
-                    validated_params["recipient"],
-                    validated_params["subject"],
-                    validated_params["body"]
-                )
-            elif invocation.tool == "linkedin-post":
-                result = tool.execute(validated_params["content"])
-            elif invocation.tool == "whatsapp-send":
-                result = tool.execute(
-                    validated_params["recipient"],
-                    validated_params["message"]
-                )
+
+            # Call execute method with validated parameters
+            # Tools should implement execute(**kwargs) method
+            try:
+                result = tool.execute(**validated_params)
+            except TypeError:
+                # Fallback for tools with specific parameter signatures
+                if invocation.tool == "send-email":
+                    result = tool.execute(
+                        validated_params["recipient"],
+                        validated_params["subject"],
+                        validated_params["body"]
+                    )
+                elif invocation.tool == "linkedin-post":
+                    result = tool.execute(validated_params["content"])
+                elif invocation.tool == "whatsapp-send":
+                    result = tool.execute(
+                        validated_params["recipient"],
+                        validated_params["message"]
+                    )
+                else:
+                    raise
 
             # Update database with result
             db.update_action_status(

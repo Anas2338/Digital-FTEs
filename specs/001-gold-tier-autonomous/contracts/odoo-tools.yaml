@@ -1,0 +1,284 @@
+openapi: 3.0.0
+info:
+  title: Odoo MCP Tools
+  description: MCP tools for Odoo accounting system integration
+  version: 1.0.0
+
+paths:
+  /tools/odoo_record_transaction:
+    post:
+      summary: Record a business transaction in Odoo
+      description: |
+        Records a new business transaction in the Odoo accounting system with automatic categorization.
+        Performs duplicate detection before recording.
+        Safety Level: 1 (Notify) - Creates draft entry, requires user review before posting.
+      operationId: odoo_record_transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - date
+                - description
+                - account_code
+                - move_type
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  description: Transaction amount (positive)
+                  example: 150.00
+                  minimum: 0.01
+                currency:
+                  type: string
+                  description: Currency code (ISO 4217)
+                  example: USD
+                  default: USD
+                date:
+                  type: string
+                  format: date-time
+                  description: Transaction date
+                  example: "2026-03-31T10:00:00Z"
+                description:
+                  type: string
+                  description: Transaction description
+                  example: "Invoice #1234 - Consulting services"
+                  maxLength: 500
+                partner_name:
+                  type: string
+                  description: Counterparty name
+                  example: "Acme Corp"
+                  maxLength: 200
+                account_code:
+                  type: string
+                  description: Odoo account code (3 digits)
+                  example: "400"
+                  pattern: "^[0-9]{3}$"
+                move_type:
+                  type: string
+                  enum: [invoice, payment, expense, refund]
+                  description: Type of transaction
+                  example: invoice
+                category:
+                  type: string
+                  enum: [Revenue, COGS, Operating Expenses, Assets, Liabilities, Equity]
+                  description: Accounting category (auto-detected if not provided)
+                  example: Revenue
+      responses:
+        '200':
+          description: Transaction recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  transaction_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  external_id:
+                    type: string
+                    description: Odoo transaction ID
+                    example: "INV/2026/0001"
+                  category:
+                    type: string
+                    example: Revenue
+                  duplicate_detected:
+                    type: boolean
+                    example: false
+        '409':
+          description: Duplicate transaction detected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Duplicate transaction detected"
+                  existing_transaction_id:
+                    type: string
+                    format: uuid
+        '400':
+          description: Invalid request parameters
+        '503':
+          description: Odoo service unavailable (circuit breaker open)
+
+  /tools/odoo_query_financials:
+    post:
+      summary: Query financial data from Odoo
+      description: |
+        Retrieves financial summary data from Odoo for a specified time period.
+        Used for CEO briefing generation and financial reporting.
+        Safety Level: 0 (Auto-Execute) - Read-only operation.
+      operationId: odoo_query_financials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - period_start
+                - period_end
+              properties:
+                period_start:
+                  type: string
+                  format: date
+                  description: Start date of reporting period
+                  example: "2026-03-24"
+                period_end:
+                  type: string
+                  format: date
+                  description: End date of reporting period
+                  example: "2026-03-30"
+                categories:
+                  type: array
+                  items:
+                    type: string
+                    enum: [Revenue, COGS, Operating Expenses, Assets, Liabilities, Equity]
+                  description: Filter by specific categories (all if not provided)
+                  example: ["Revenue", "Operating Expenses"]
+                include_details:
+                  type: boolean
+                  description: Include individual transactions
+                  default: false
+      responses:
+        '200':
+          description: Financial data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  period:
+                    type: object
+                    properties:
+                      start:
+                        type: string
+                        format: date
+                      end:
+                        type: string
+                        format: date
+                  summary:
+                    type: object
+                    properties:
+                      revenue:
+                        type: number
+                        example: 12450.00
+                      cogs:
+                        type: number
+                        example: 0.00
+                      operating_expenses:
+                        type: number
+                        example: 3200.00
+                      profit:
+                        type: number
+                        example: 9250.00
+                  transactions:
+                    type: array
+                    description: Individual transactions (if include_details=true)
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        date:
+                          type: string
+                          format: date-time
+                        amount:
+                          type: number
+                        category:
+                          type: string
+                        description:
+                          type: string
+        '400':
+          description: Invalid date range
+        '503':
+          description: Odoo service unavailable
+
+  /tools/odoo_check_connection:
+    post:
+      summary: Check Odoo connection health
+      description: |
+        Verifies connectivity to Odoo instance and authentication status.
+        Used by circuit breaker for health checks.
+        Safety Level: 0 (Auto-Execute) - Read-only health check.
+      operationId: odoo_check_connection
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timeout:
+                  type: integer
+                  description: Connection timeout in seconds
+                  default: 5
+                  minimum: 1
+                  maximum: 30
+      responses:
+        '200':
+          description: Connection healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [healthy, degraded]
+                    example: healthy
+                  response_time_ms:
+                    type: integer
+                    example: 150
+                  odoo_version:
+                    type: string
+                    example: "19.0"
+        '503':
+          description: Connection failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  status:
+                    type: string
+                    example: offline
+                  error:
+                    type: string
+                    example: "Connection timeout"
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        error_code:
+          type: string
+          description: Machine-readable error code

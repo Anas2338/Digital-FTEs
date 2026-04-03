@@ -1,0 +1,423 @@
+openapi: 3.0.0
+info:
+  title: Social Media MCP Tools
+  description: MCP tools for Facebook, Instagram, and Twitter/X integration
+  version: 1.0.0
+
+paths:
+  /tools/social_post:
+    post:
+      summary: Post content to social media platforms
+      description: |
+        Publishes content to one or more social media platforms (Facebook, Instagram, Twitter/X).
+        Requires user approval before posting (Level 2 action safety).
+        Respects platform-specific rate limits (10 posts/day total).
+      operationId: social_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+                - platforms
+              properties:
+                content:
+                  type: string
+                  description: Post text content
+                  example: "Excited to announce our new product launch!"
+                  maxLength: 280
+                  minLength: 1
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                    enum: [facebook, instagram, twitter]
+                  description: Target platforms for posting
+                  example: ["facebook", "instagram"]
+                  minItems: 1
+                  maxItems: 3
+                media_urls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  description: URLs of media to attach (images/videos)
+                  example: ["https://example.com/image.jpg"]
+                  maxItems: 4
+                scheduled_time:
+                  type: string
+                  format: date-time
+                  description: Schedule for future posting (optional, posts immediately if not provided)
+                  example: "2026-04-01T10:00:00Z"
+      responses:
+        '200':
+          description: Post published successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  post_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  platform_ids:
+                    type: object
+                    description: Platform-specific post IDs
+                    example:
+                      facebook: "123456789_987654321"
+                      instagram: "987654321"
+                      twitter: "1234567890123456789"
+                  published_at:
+                    type: string
+                    format: date-time
+                    example: "2026-03-31T10:00:00Z"
+        '202':
+          description: Post scheduled for future publication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  post_id:
+                    type: string
+                    format: uuid
+                  scheduled_for:
+                    type: string
+                    format: date-time
+                  status:
+                    type: string
+                    example: scheduled
+        '400':
+          description: Invalid request (content too long, invalid platforms, etc.)
+        '403':
+          description: User approval required but not granted
+        '429':
+          description: Rate limit exceeded (10 posts/day)
+        '503':
+          description: One or more platforms unavailable
+
+  /tools/social_get_engagement:
+    post:
+      summary: Retrieve engagement metrics for posts
+      description: |
+        Fetches engagement metrics (likes, comments, shares, reach) for posts across all platforms.
+        Used for CEO briefing generation and high engagement notifications.
+        Safety Level: 0 (Auto-Execute) - Read-only operation.
+      operationId: social_get_engagement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                post_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Specific post IDs to query (optional)
+                  example: ["123e4567-e89b-12d3-a456-426614174000"]
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                    enum: [facebook, instagram, twitter]
+                  description: Filter by platforms (all if not provided)
+                  example: ["facebook", "instagram"]
+                period_start:
+                  type: string
+                  format: date-time
+                  description: Start of time period (optional, last 7 days if not provided)
+                  example: "2026-03-24T00:00:00Z"
+                period_end:
+                  type: string
+                  format: date-time
+                  description: End of time period (optional, now if not provided)
+                  example: "2026-03-31T23:59:59Z"
+      responses:
+        '200':
+          description: Engagement metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        post_id:
+                          type: string
+                          format: uuid
+                        content:
+                          type: string
+                          description: First 50 chars of post content
+                        published_at:
+                          type: string
+                          format: date-time
+                        platforms:
+                          type: object
+                          properties:
+                            facebook:
+                              type: object
+                              properties:
+                                likes:
+                                  type: integer
+                                  example: 120
+                                comments:
+                                  type: integer
+                                  example: 15
+                                shares:
+                                  type: integer
+                                  example: 8
+                                reach:
+                                  type: integer
+                                  example: 1500
+                            instagram:
+                              type: object
+                              properties:
+                                likes:
+                                  type: integer
+                                  example: 95
+                                comments:
+                                  type: integer
+                                  example: 12
+                                engagement_rate:
+                                  type: number
+                                  format: float
+                                  example: 0.045
+                            twitter:
+                              type: object
+                              properties:
+                                likes:
+                                  type: integer
+                                  example: 45
+                                retweets:
+                                  type: integer
+                                  example: 12
+                                replies:
+                                  type: integer
+                                  example: 8
+                                impressions:
+                                  type: integer
+                                  example: 2500
+                  summary:
+                    type: object
+                    description: Aggregated metrics across all posts
+                    properties:
+                      total_posts:
+                        type: integer
+                        example: 15
+                      total_engagement:
+                        type: integer
+                        example: 781
+                      average_engagement_per_post:
+                        type: number
+                        example: 52.1
+                      high_engagement_posts:
+                        type: array
+                        description: Posts exceeding 3x average engagement
+                        items:
+                          type: object
+                          properties:
+                            post_id:
+                              type: string
+                              format: uuid
+                            platform:
+                              type: string
+                            engagement:
+                              type: integer
+                            threshold:
+                              type: integer
+        '400':
+          description: Invalid date range or parameters
+        '503':
+          description: One or more platforms unavailable
+
+  /tools/social_check_connection:
+    post:
+      summary: Check social media platform connections
+      description: |
+        Verifies connectivity and authentication status for all social media platforms.
+        Used by circuit breaker for health checks.
+        Safety Level: 0 (Auto-Execute) - Read-only health check.
+      operationId: social_check_connection
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                    enum: [facebook, instagram, twitter]
+                  description: Platforms to check (all if not provided)
+                  example: ["facebook", "instagram", "twitter"]
+                timeout:
+                  type: integer
+                  description: Connection timeout in seconds per platform
+                  default: 5
+                  minimum: 1
+                  maximum: 30
+      responses:
+        '200':
+          description: Connection status for all platforms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  platforms:
+                    type: object
+                    properties:
+                      facebook:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [healthy, degraded, offline]
+                            example: healthy
+                          response_time_ms:
+                            type: integer
+                            example: 120
+                          rate_limit_remaining:
+                            type: integer
+                            example: 180
+                          rate_limit_reset_at:
+                            type: string
+                            format: date-time
+                      instagram:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [healthy, degraded, offline]
+                            example: healthy
+                          response_time_ms:
+                            type: integer
+                            example: 150
+                          rate_limit_remaining:
+                            type: integer
+                            example: 190
+                          rate_limit_reset_at:
+                            type: string
+                            format: date-time
+                      twitter:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [healthy, degraded, offline]
+                            example: healthy
+                          response_time_ms:
+                            type: integer
+                            example: 100
+                          rate_limit_remaining:
+                            type: integer
+                            example: 850
+                          rate_limit_reset_at:
+                            type: string
+                            format: date-time
+        '503':
+          description: All platforms unavailable
+
+  /tools/social_delete_post:
+    post:
+      summary: Delete a published post from platforms
+      description: |
+        Removes a post from one or more social media platforms.
+        Requires user approval (Level 3 action safety - delete operation).
+      operationId: social_delete_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - post_id
+              properties:
+                post_id:
+                  type: string
+                  format: uuid
+                  description: Internal post ID
+                  example: "123e4567-e89b-12d3-a456-426614174000"
+                platforms:
+                  type: array
+                  items:
+                    type: string
+                    enum: [facebook, instagram, twitter]
+                  description: Platforms to delete from (all if not provided)
+                  example: ["facebook"]
+                reason:
+                  type: string
+                  description: Reason for deletion (for audit log)
+                  example: "Content error - incorrect information"
+                  maxLength: 500
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  deleted_from:
+                    type: array
+                    items:
+                      type: string
+                    example: ["facebook", "instagram"]
+                  failed_platforms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        platform:
+                          type: string
+                        error:
+                          type: string
+                    example: []
+        '403':
+          description: User approval required but not granted
+        '404':
+          description: Post not found
+        '503':
+          description: Platforms unavailable
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        error_code:
+          type: string
+          description: Machine-readable error code
