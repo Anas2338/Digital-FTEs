@@ -1,0 +1,211 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Health Check Schema",
+  "description": "Schema for health monitoring and alerting in Platinum Tier",
+  "definitions": {
+    "health_check": {
+      "type": "object",
+      "properties": {
+        "check_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this health check"
+        },
+        "agent_id": {
+          "type": "string",
+          "enum": ["cloud", "local"],
+          "description": "Which agent performed the check"
+        },
+        "check_type": {
+          "type": "string",
+          "enum": ["agent_responsiveness", "vault_sync", "api_connectivity", "odoo_health"],
+          "description": "Type of health check performed"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail"],
+          "description": "Check outcome"
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the check was performed"
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Response time in milliseconds (if applicable)"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "error_message": {
+              "type": "string",
+              "description": "Error details if check failed"
+            },
+            "recovery_attempted": {
+              "type": "boolean",
+              "description": "Whether automatic recovery was attempted"
+            },
+            "recovery_successful": {
+              "type": "boolean",
+              "description": "Whether recovery succeeded"
+            },
+            "consecutive_failures": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of consecutive failures for this check type"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "required": ["check_id", "agent_id", "check_type", "status", "checked_at"],
+      "additionalProperties": false
+    },
+    "alert": {
+      "type": "object",
+      "properties": {
+        "alert_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this alert"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "warning", "info"],
+          "description": "Alert severity level"
+        },
+        "alert_type": {
+          "type": "string",
+          "enum": ["agent_down", "sync_failure", "api_failure", "odoo_down", "recovery_failed"],
+          "description": "Type of alert"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable alert message"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["email", "sms", "push"]
+          },
+          "description": "Alert delivery channels"
+        },
+        "sent_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When alert was sent"
+        },
+        "related_check_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Health check that triggered this alert"
+        },
+        "acknowledged": {
+          "type": "boolean",
+          "description": "Whether user acknowledged the alert"
+        },
+        "acknowledged_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When alert was acknowledged"
+        }
+      },
+      "required": ["alert_id", "severity", "alert_type", "message", "channels", "sent_at"],
+      "additionalProperties": false
+    },
+    "health_summary": {
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "enum": ["cloud", "local"]
+        },
+        "overall_status": {
+          "type": "string",
+          "enum": ["healthy", "degraded", "critical"],
+          "description": "Overall health status"
+        },
+        "last_check_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checks": {
+          "type": "object",
+          "properties": {
+            "agent_responsiveness": {
+              "type": "string",
+              "enum": ["pass", "fail"]
+            },
+            "vault_sync": {
+              "type": "string",
+              "enum": ["pass", "fail"]
+            },
+            "api_connectivity": {
+              "type": "string",
+              "enum": ["pass", "fail"]
+            },
+            "odoo_health": {
+              "type": "string",
+              "enum": ["pass", "fail"]
+            }
+          }
+        },
+        "uptime_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Uptime over last 30 days"
+        }
+      },
+      "required": ["agent_id", "overall_status", "last_check_at", "checks"],
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "health_check": {
+        "check_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "agent_id": "cloud",
+        "check_type": "odoo_health",
+        "status": "fail",
+        "checked_at": "2026-04-03T14:30:00Z",
+        "latency_ms": null,
+        "details": {
+          "error_message": "Connection refused to 127.0.0.1:8069",
+          "recovery_attempted": true,
+          "recovery_successful": false,
+          "consecutive_failures": 2
+        }
+      }
+    },
+    {
+      "alert": {
+        "alert_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        "severity": "critical",
+        "alert_type": "odoo_down",
+        "message": "Odoo service is down. Automatic restart failed after 2 attempts.",
+        "channels": ["email", "sms", "push"],
+        "sent_at": "2026-04-03T14:32:00Z",
+        "related_check_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "acknowledged": false
+      }
+    },
+    {
+      "health_summary": {
+        "agent_id": "cloud",
+        "overall_status": "degraded",
+        "last_check_at": "2026-04-03T14:30:00Z",
+        "checks": {
+          "agent_responsiveness": "pass",
+          "vault_sync": "pass",
+          "api_connectivity": "pass",
+          "odoo_health": "fail"
+        },
+        "uptime_percentage": 99.2
+      }
+    }
+  ]
+}

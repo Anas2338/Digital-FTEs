@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Configuration Schema",
+  "description": "Schema for cloud and local agent configuration",
+  "type": "object",
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "enum": ["cloud", "local"],
+      "description": "Unique agent identifier"
+    },
+    "agent_type": {
+      "type": "string",
+      "enum": ["cloud", "local"],
+      "description": "Agent deployment type"
+    },
+    "llm_provider": {
+      "type": "string",
+      "enum": ["claude", "gemini"],
+      "description": "LLM provider choice (must match across both agents)"
+    },
+    "credential_scope": {
+      "type": "string",
+      "enum": ["read_only", "full"],
+      "description": "API credential access level"
+    },
+    "vault_path": {
+      "type": "string",
+      "description": "Absolute path to Obsidian vault"
+    },
+    "sync_config": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether vault synchronization is enabled"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["git", "syncthing"],
+          "description": "Synchronization technology"
+        },
+        "remote_url": {
+          "type": "string",
+          "description": "Git remote URL or Syncthing peer address"
+        },
+        "sync_interval_seconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 300,
+          "default": 30,
+          "description": "How often to sync (seconds)"
+        },
+        "ssh_key_path": {
+          "type": "string",
+          "description": "Path to SSH private key (for git sync)"
+        }
+      },
+      "required": ["enabled", "method", "sync_interval_seconds"],
+      "additionalProperties": false
+    },
+    "health_config": {
+      "type": "object",
+      "properties": {
+        "check_interval_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 600,
+          "default": 300,
+          "description": "Health check frequency (seconds)"
+        },
+        "alert_channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["email", "sms", "push"]
+          },
+          "description": "Alert delivery channels"
+        },
+        "alert_threshold_failures": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "default": 2,
+          "description": "Consecutive failures before alerting"
+        },
+        "email_config": {
+          "type": "object",
+          "properties": {
+            "smtp_host": {
+              "type": "string"
+            },
+            "smtp_port": {
+              "type": "integer"
+            },
+            "from_address": {
+              "type": "string",
+              "format": "email"
+            },
+            "to_addresses": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        },
+        "sms_config": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["twilio"]
+            },
+            "account_sid": {
+              "type": "string"
+            },
+            "from_number": {
+              "type": "string"
+            },
+            "to_numbers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "push_config": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["pushover", "ntfy"]
+            },
+            "api_key": {
+              "type": "string"
+            },
+            "user_key": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["check_interval_seconds", "alert_channels", "alert_threshold_failures"],
+      "additionalProperties": false
+    },
+    "work_zones": {
+      "type": "object",
+      "description": "Work-zone specialization (what this agent can do)",
+      "properties": {
+        "can_draft": {
+          "type": "boolean",
+          "description": "Can create drafts (cloud: true, local: false)"
+        },
+        "can_approve": {
+          "type": "boolean",
+          "description": "Can approve drafts (cloud: false, local: true)"
+        },
+        "can_execute": {
+          "type": "boolean",
+          "description": "Can execute actions (cloud: false, local: true)"
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["email", "social", "accounting", "banking", "whatsapp"]
+          },
+          "description": "Which domains this agent handles"
+        }
+      },
+      "required": ["can_draft", "can_approve", "can_execute", "domains"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["agent_id", "agent_type", "llm_provider", "credential_scope", "vault_path", "sync_config", "health_config", "work_zones"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "agent_id": "cloud",
+      "agent_type": "cloud",
+      "llm_provider": "claude",
+      "credential_scope": "read_only",
+      "vault_path": "/opt/obsidian-vault",
+      "sync_config": {
+        "enabled": true,
+        "method": "git",
+        "remote_url": "git@github.com:user/vault.git",
+        "sync_interval_seconds": 30,
+        "ssh_key_path": "/home/cloudagent/.ssh/id_ed25519"
+      },
+      "health_config": {
+        "check_interval_seconds": 300,
+        "alert_channels": ["email", "sms"],
+        "alert_threshold_failures": 2,
+        "email_config": {
+          "smtp_host": "smtp.gmail.com",
+          "smtp_port": 587,
+          "from_address": "alerts@example.com",
+          "to_addresses": ["user@example.com"]
+        }
+      },
+      "work_zones": {
+        "can_draft": true,
+        "can_approve": false,
+        "can_execute": false,
+        "domains": ["email", "social", "accounting"]
+      }
+    },
+    {
+      "agent_id": "local",
+      "agent_type": "local",
+      "llm_provider": "claude",
+      "credential_scope": "full",
+      "vault_path": "D:\\obsidian-vault",
+      "sync_config": {
+        "enabled": true,
+        "method": "git",
+        "remote_url": "git@github.com:user/vault.git",
+        "sync_interval_seconds": 30,
+        "ssh_key_path": "C:\\Users\\user\\.ssh\\id_ed25519"
+      },
+      "health_config": {
+        "check_interval_seconds": 300,
+        "alert_channels": ["push"],
+        "alert_threshold_failures": 2,
+        "push_config": {
+          "provider": "pushover",
+          "api_key": "your-api-key",
+          "user_key": "your-user-key"
+        }
+      },
+      "work_zones": {
+        "can_draft": false,
+        "can_approve": true,
+        "can_execute": true,
+        "domains": ["email", "social", "accounting", "banking", "whatsapp"]
+      }
+    }
+  ]
+}

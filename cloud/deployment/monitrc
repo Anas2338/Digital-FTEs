@@ -1,0 +1,141 @@
+###############################################################################
+# Monit Configuration for Digital FTE Cloud Agent
+#
+# Monitors:
+# - Cloud agent process (cloud-agent.service)
+# - Vault sync status (checks .sync-status timestamp)
+# - Odoo health endpoint
+#
+# Based on spec.md FR-031 through FR-034 and User Story 5.
+#
+# Installation:
+#   sudo cp monitrc /etc/monit/conf.d/digital-fte.conf
+#   sudo monit reload
+###############################################################################
+
+# Check cloud agent systemd service
+check process cloud-agent with pidfile /var/run/cloud-agent.pid
+    group digital-fte
+    start program = "/bin/systemctl start cloud-agent.service"
+    stop program = "/bin/systemctl stop cloud-agent.service"
+
+    # Restart after 2 failed checks (FR-033)
+    if failed host 127.0.0.1 port 8080 protocol http
+        request "/health"
+        with timeout 10 seconds
+        for 2 cycles
+    then restart
+
+    # Alert after 3 restart attempts (FR-033)
+    if 3 restarts within 5 cycles then exec "/opt/digital-fte/alert.sh"
+
+    # Check every 5 minutes (FR-031)
+    every 5 cycles
+
+# Check vault sync status
+check file vault-sync-status with path /opt/digital-fte/obsidian-vault/.sync-status/cloud.json
+    group digital-fte
+
+    # Alert if sync lag exceeds 5 minutes (FR-017, FR-032)
+    if timestamp > 5 minutes then alert
+
+    # Trigger vault sync if lag exceeds 10 minutes
+    if timestamp > 10 minutes then exec "/opt/digital-fte/sync-vault.sh"
+
+    # Check every 1 minute (sync is critical)
+    every 1 cycles
+
+# Check Odoo health endpoint
+check host odoo-health with address localhost
+    group digital-fte
+
+    # Check Odoo /web/health endpoint (FR-028)
+    if failed
+        port 8069
+        protocol http
+        request "/web/health"
+        with timeout 10 seconds
+        for 2 cycles
+    then restart
+
+    # Restart Odoo service after 2 failed checks
+    start program = "/bin/systemctl start odoo.service"
+    stop program = "/bin/systemctl stop odoo.service"
+
+    # Alert after 3 restart attempts
+    if 3 restarts within 5 cycles then exec "/opt/digital-fte/alert.sh"
+
+    # Check every 5 minutes (FR-031)
+    every 5 cycles
+
+# Check vault sync process (systemd timer)
+check process vault-sync with matching "vault-sync.service"
+    group digital-fte
+
+    # Restart if not running
+    if does not exist for 2 cycles then restart
+    start program = "/bin/systemctl start vault-sync.timer"
+    stop program = "/bin/systemctl stop vault-sync.timer"
+
+    # Check every 5 minutes
+    every 5 cycles
+
+# Check disk space (prevent backup failures)
+check filesystem vault-disk with path /opt/digital-fte/obsidian-vault
+    group digital-fte
+
+    # Alert if disk usage exceeds 80%
+    if space usage > 80% then alert
+
+    # Critical alert if disk usage exceeds 90%
+    if space usage > 90% then exec "/opt/digital-fte/alert.sh"
+
+    # Check every 30 minutes
+    every 30 cycles
+
+# Check Odoo backup directory
+check directory odoo-backups with path /backups/odoo
+    group digital-fte
+
+    # Alert if backup directory doesn't exist
+    if does not exist then alert
+
+    # Alert if no backups in last 25 hours (daily backup should run)
+    if timestamp > 25 hours then alert
+
+    # Check every 6 hours
+    every 72 cycles
+
+###############################################################################
+# Global Monit Settings
+###############################################################################
+
+# Check services every 1 minute (base cycle)
+set daemon 60
+
+# Log to syslog
+set log syslog
+
+# Email alerts (configure with your SMTP settings)
+# set mailserver smtp.example.com port 587
+#     username "alerts@example.com" password "password"
+#     using tlsv12
+#
+# set alert admin@example.com
+
+# Web interface (optional, for monitoring dashboard)
+# set httpd port 2812 and
+#     use address localhost
+#     allow localhost
+#     allow admin:monit
+
+###############################################################################
+# Alert Script Configuration
+###############################################################################
+
+# The alert.sh script should be configured with:
+# - Twilio credentials for SMS alerts
+# - Pushover/ntfy.sh credentials for push notifications
+# - Email SMTP settings
+#
+# See /opt/digital-fte/alert.sh for configuration
